@@ -15,9 +15,9 @@ def createUserPseudo():
     return input("Veuillez renseigner votre pseudo : ")
 
 class User:
-    def __init__(self, broker_address=getBrokerAddress(), port=getBrokerPort()):
+    def __init__(self, pseudo, broker_address=getBrokerAddress(), port=getBrokerPort()):
         self.id = createUserId()
-        self.pseudo = createUserPseudo()
+        self.pseudo = pseudo  # reçu depuis l'interface GUI
         self.client = mqtt.Client(client_id=self.id)
         self.client.connect(broker_address, port)
         self.client.loop_start()
