@@ -116,8 +116,6 @@ class ChatWindow(tk.Tk):
         self.chat_area.insert("end", f"{author} : {text}\n")
         self.chat_area.see("end")
         self.chat_area.config(state="disabled")
-
-    def receive_message(self, channel_name, msg):
       
     def receive_message(self, channel_name, msg):
         try:
