@@ -9,10 +9,13 @@ class Channel:
         self.client = mqtt.Client()
         self.client.on_message = self._internal_on_message
         self.on_message_callback = None
+        self.connected = False  # pour éviter plusieurs loop_start()
 
     def connect(self):
-        self.client.connect(self.broker_address, self.port)
-        self.client.loop_start()  # Non-bloquant, pas besoin de thread
+        if not self.connected:
+            self.client.connect(self.broker_address, self.port)
+            self.client.loop_start()
+            self.connected = True
 
     def subscribe(self):
         self.connect()
@@ -35,6 +38,4 @@ class Channel:
         self.client.loop_stop()
         self.client.disconnect()
         print(f"Déconnecté du canal '{self.name}'")
-
-    def __str__(self):
-        return f"Channel(name='{self.name}')"
+        self.connected = False
