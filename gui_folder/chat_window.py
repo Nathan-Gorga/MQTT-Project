@@ -284,16 +284,41 @@ class ChatWindow(tk.Tk):
             self.display_message("Système", "Nom de salon invalide.")
             return
 
-        existing_channels = list(self.salon_menu["values"])
-        if new_channel in existing_channels:
+        if new_channel in self.salons_disponibles:
             self.display_message("Système", f"Le salon '{new_channel}' existe déjà.")
             return
 
-        updated_channels = existing_channels + [new_channel]
-        self.salon_menu["values"] = updated_channels
-        self.salon_var.set(new_channel)
-        self.on_change_salon(None)
+        # Ajouter au modèle
+        self.salons_disponibles.append(new_channel)
+
+        # Abonnement MQTT
+        self.user.subscribe_to_channels([new_channel], self.receive_message)
+
+        # Création UI bloc dans la sidebar
+        sidebar_frame = list(self.children.values())[0].winfo_children()[0]  # récupère la frame de gauche
+
+        bloc = tk.Frame(sidebar_frame, bg="#ffffff", bd=1, relief="groove", padx=5, pady=5)
+        bloc.pack(fill="x", pady=2, padx=5)
+
+        salon_label = tk.Label(bloc, text=new_channel, font=("Arial", 10, "bold"), anchor="w", bg="#ffffff")
+        salon_label.pack(fill="x")
+
+        last_msg = tk.Label(bloc, text="", font=("Arial", 8), fg="gray", anchor="w", bg="#ffffff")
+        last_msg.pack(fill="x")
+
+        bloc.bind("<Button-1>", lambda e, s=new_channel: self.select_channel(s))
+        salon_label.bind("<Button-1>", lambda e, s=new_channel: self.select_channel(s))
+        last_msg.bind("<Button-1>", lambda e, s=new_channel: self.select_channel(s))
+
+        self.salon_widgets[new_channel] = {
+            "frame": bloc,
+            "label": salon_label,
+            "last_msg": last_msg
+        }
+
         self.display_message("Système", f"Salon '{new_channel}' créé.")
+        self.select_channel(new_channel)
+
 
        
     def show_create_channel_popup(self):
