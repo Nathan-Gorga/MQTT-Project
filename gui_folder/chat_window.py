@@ -62,6 +62,13 @@ class ChatWindow(tk.Tk):
         tk.Button(bottom_frame, text="Envoyer", command=self.send_message).pack(side="right", padx=(10, 0))
 
         tk.Button(bottom_frame, text="Image", command=self.send_image).pack(side="right", padx=(0, 5))
+        
+        salon_create_frame = tk.Frame(self)
+        salon_create_frame.pack(fill="x", padx=10, pady=(0, 10))
+
+        self.new_channel_var = tk.StringVar()
+        tk.Entry(salon_create_frame, textvariable=self.new_channel_var).pack(side="left", fill="x", expand=True)
+        tk.Button(salon_create_frame, text="Créer salon", command=self.create_channel).pack(side="left", padx=(5, 0))
 
 
     def display_message(self, author, text):
@@ -194,3 +201,23 @@ class ChatWindow(tk.Tk):
         self.chat_area.insert("end", "\n")
         self.chat_area.config(state="disabled")
         self.chat_area.see("end")
+        
+    def create_channel(self):
+        new_channel = self.new_channel_var.get().strip()
+        if not new_channel:
+            self.display_message("Système", "Nom de salon invalide.")
+            return
+
+        existing_channels = list(self.salon_menu["values"])
+        if new_channel in existing_channels:
+            self.display_message("Système", f"Le salon '{new_channel}' existe déjà.")
+            return
+
+        # Ajouter le nouveau salon à la liste déroulante
+        updated_channels = existing_channels + [new_channel]
+        self.salon_menu["values"] = updated_channels
+        self.salon_var.set(new_channel)
+
+        # Créer, s'abonner et afficher l'historique
+        self.on_change_salon(None)
+        self.display_message("Système", f"Salon '{new_channel}' créé.")
