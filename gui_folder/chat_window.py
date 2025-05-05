@@ -8,7 +8,7 @@ import io
 
 
 class ChatWindow(tk.Tk):
-    def __init__(self, pseudo, salon, user, manager): # test de commit
+    def __init__(self, pseudo, salon, user, manager): 
         super().__init__()
         self.title(f"Salon : {salon}")
         self.geometry("500x400")
