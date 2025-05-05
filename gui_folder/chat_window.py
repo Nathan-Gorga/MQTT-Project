@@ -1,5 +1,11 @@
 import tkinter as tk
 from tkinter import ttk
+import base64
+import json
+from tkinter import filedialog
+from PIL import Image, ImageTk
+import io
+
 
 class ChatWindow(tk.Tk):
     def __init__(self, pseudo, salon, user, manager): # test de commit
@@ -16,6 +22,7 @@ class ChatWindow(tk.Tk):
         self.pseudo_var = tk.StringVar(value=pseudo)
         self.salon_var = tk.StringVar(value=salon)
         self.create_widgets()
+        self.local_storage = {}
 
         # Brancher la réception des messages
         channel = self.manager.get_channel(salon)
@@ -54,7 +61,7 @@ class ChatWindow(tk.Tk):
 
         tk.Button(bottom_frame, text="Envoyer", command=self.send_message).pack(side="right", padx=(10, 0))
 
-
+        tk.Button(bottom_frame, text="Image", command=self.send_image).pack(side="right", padx=(0, 5))
 
 
     def display_message(self, author, text):
@@ -64,9 +71,23 @@ class ChatWindow(tk.Tk):
         self.chat_area.config(state="disabled")
 
     def receive_message(self, channel_name, msg):
-        if msg:
-            auteur, _, contenu = msg.partition(": ")
+        try:
+            payload = json.loads(msg)
+            if isinstance(payload, dict) and payload.get("type") == "image":
+                author = payload.get("author", "Inconnu")
+                image_data = payload.get("data")
+                self.store_local_message(channel_name, author, payload)
+                if self.salon == channel_name:
+                    self.display_image(author, image_data)
+                return
+        except Exception:
+            pass  # Si erreur ou pas un JSON, on considère un message texte
+
+        auteur, _, contenu = msg.partition(": ")
+        self.store_local_message(channel_name, auteur.strip(), contenu.strip())
+        if self.salon == channel_name:
             self.display_message(auteur.strip(), contenu.strip())
+
 
     def send_message(self):
         msg = self.message.get().strip()
@@ -84,15 +105,24 @@ class ChatWindow(tk.Tk):
         if ancien_channel:
             ancien_channel.unsubscribe()
 
-        # Création et abonnement nouveau salon
+        # Mise à jour salon courant
         self.salon = nouveau_salon
+        self.title(f"Salon : {self.salon}")
+
+        # Abonnement au nouveau
         self.manager.create_channel(nouveau_salon)
         new_channel = self.manager.get_channel(nouveau_salon)
         new_channel.set_on_message_callback(self.receive_message)
         new_channel.subscribe()
 
-        self.title(f"Salon : {self.salon}")
+        # Nettoyer la zone et afficher l’historique
+        self.chat_area.config(state="normal")
+        self.chat_area.delete("1.0", tk.END)
+        self.chat_area.config(state="disabled")
+
         self.display_message("Système", f"Salon changé pour : {self.salon}")
+        self.display_local_history(self.salon)
+
 
     def change_pseudo(self):
         new_pseudo = self.pseudo_var.get().strip()
@@ -100,3 +130,67 @@ class ChatWindow(tk.Tk):
             self.pseudo = new_pseudo
             self.user.pseudo = new_pseudo
             self.display_message("Système", f"Pseudo changé pour : {self.pseudo}")
+            
+    def store_local_message(self, channel, author, content):
+        if channel not in self.local_storage:
+            self.local_storage[channel] = []
+        self.local_storage[channel].append((author, content))
+        
+    def display_local_history(self, salon):
+        messages = self.local_storage.get(salon, [])
+        for author, content in messages:
+            if isinstance(content, dict) and content.get("type") == "image":
+                self.display_image(author, content.get("data"))
+            else:
+                self.display_message(author, content)
+
+   
+
+    def send_image(self):
+        filepath = filedialog.askopenfilename(
+            title="Choisir une image",
+            filetypes=[("Images", "*.png *.jpg *.jpeg *.gif")]
+        )
+        if not filepath:
+            return
+
+        # Lecture + encodage
+        with open(filepath, "rb") as f:
+            image_bytes = f.read()
+        image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+
+        # Construction du JSON
+        payload = {
+            "type": "image",
+            "author": self.pseudo,
+            "data": image_b64
+        }
+        json_payload = json.dumps(payload)
+
+        # Publication **sans** préfixe
+        # on utilise directement le client MQTT, sans passer par user.send_message
+        self.user.client.publish(self.salon, json_payload)
+        print(f"[envoyé image sur {self.salon}] {json_payload[:50]}…")
+        
+    def display_image(self, author, base64_data):
+        import io
+        from PIL import Image, ImageTk
+        import base64
+
+        image_data = base64.b64decode(base64_data)
+        image = Image.open(io.BytesIO(image_data))
+        image.thumbnail((200, 200))  # Tu peux ajuster la taille ici
+
+        image_tk = ImageTk.PhotoImage(image)
+
+        # Important : garder une référence sinon l'image disparaît
+        if not hasattr(self, "images_refs"):
+            self.images_refs = []
+        self.images_refs.append(image_tk)
+
+        self.chat_area.config(state="normal")
+        self.chat_area.insert("end", f"{author} a envoyé une image :\n")
+        self.chat_area.image_create("end", image=image_tk)
+        self.chat_area.insert("end", "\n")
+        self.chat_area.config(state="disabled")
+        self.chat_area.see("end")
