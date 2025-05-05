@@ -1,0 +1,249 @@
+[
+    {
+        "label": "paho.mqtt.client",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "paho.mqtt.client",
+        "description": "paho.mqtt.client",
+        "detail": "paho.mqtt.client",
+        "documentation": {}
+    },
+    {
+        "label": "getBrokerAddress",
+        "importPath": "utils.utils",
+        "description": "utils.utils",
+        "isExtraImport": true,
+        "detail": "utils.utils",
+        "documentation": {}
+    },
+    {
+        "label": "getBrokerPort",
+        "importPath": "utils.utils",
+        "description": "utils.utils",
+        "isExtraImport": true,
+        "detail": "utils.utils",
+        "documentation": {}
+    },
+    {
+        "label": "getBrokerAddress",
+        "importPath": "utils.utils",
+        "description": "utils.utils",
+        "isExtraImport": true,
+        "detail": "utils.utils",
+        "documentation": {}
+    },
+    {
+        "label": "getBrokerPort",
+        "importPath": "utils.utils",
+        "description": "utils.utils",
+        "isExtraImport": true,
+        "detail": "utils.utils",
+        "documentation": {}
+    },
+    {
+        "label": "getBrokerAddress",
+        "importPath": "utils.utils",
+        "description": "utils.utils",
+        "isExtraImport": true,
+        "detail": "utils.utils",
+        "documentation": {}
+    },
+    {
+        "label": "getBrokerPort",
+        "importPath": "utils.utils",
+        "description": "utils.utils",
+        "isExtraImport": true,
+        "detail": "utils.utils",
+        "documentation": {}
+    },
+    {
+        "label": "Channel",
+        "importPath": "channel.channel",
+        "description": "channel.channel",
+        "isExtraImport": true,
+        "detail": "channel.channel",
+        "documentation": {}
+    },
+    {
+        "label": "tkinter",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "tkinter",
+        "description": "tkinter",
+        "detail": "tkinter",
+        "documentation": {}
+    },
+    {
+        "label": "ttk",
+        "importPath": "tkinter",
+        "description": "tkinter",
+        "isExtraImport": true,
+        "detail": "tkinter",
+        "documentation": {}
+    },
+    {
+        "label": "ttk",
+        "importPath": "tkinter",
+        "description": "tkinter",
+        "isExtraImport": true,
+        "detail": "tkinter",
+        "documentation": {}
+    },
+    {
+        "label": "messagebox",
+        "importPath": "tkinter",
+        "description": "tkinter",
+        "isExtraImport": true,
+        "detail": "tkinter",
+        "documentation": {}
+    },
+    {
+        "label": "ChatWindow",
+        "importPath": "gui_folder.chat_window",
+        "description": "gui_folder.chat_window",
+        "isExtraImport": true,
+        "detail": "gui_folder.chat_window",
+        "documentation": {}
+    },
+    {
+        "label": "ChannelManager",
+        "importPath": "channel.channelManager",
+        "description": "channel.channelManager",
+        "isExtraImport": true,
+        "detail": "channel.channelManager",
+        "documentation": {}
+    },
+    {
+        "label": "User",
+        "importPath": "user.user",
+        "description": "user.user",
+        "isExtraImport": true,
+        "detail": "user.user",
+        "documentation": {}
+    },
+    {
+        "label": "random",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "random",
+        "description": "random",
+        "detail": "random",
+        "documentation": {}
+    },
+    {
+        "label": "string",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "string",
+        "description": "string",
+        "detail": "string",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "datetime",
+        "description": "datetime",
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "hashlib",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "hashlib",
+        "description": "hashlib",
+        "detail": "hashlib",
+        "documentation": {}
+    },
+    {
+        "label": "LoginWindow",
+        "importPath": "gui_folder.login_window",
+        "description": "gui_folder.login_window",
+        "isExtraImport": true,
+        "detail": "gui_folder.login_window",
+        "documentation": {}
+    },
+    {
+        "label": "Channel",
+        "kind": 6,
+        "importPath": "channel.channel",
+        "description": "channel.channel",
+        "peekOfCode": "class Channel:\n    def __init__(self, name, broker_address=getBrokerAddress(), port=getBrokerPort()):\n        self.name = name\n        self.broker_address = broker_address\n        self.port = port\n        self.client = mqtt.Client()\n        self.client.on_message = self._internal_on_message\n        self.on_message_callback = None\n        self.connected = False  # pour éviter plusieurs loop_start()\n    def connect(self):",
+        "detail": "channel.channel",
+        "documentation": {}
+    },
+    {
+        "label": "ChannelManager",
+        "kind": 6,
+        "importPath": "channel.channelManager",
+        "description": "channel.channelManager",
+        "peekOfCode": "class ChannelManager:\n    def __init__(self, broker_address=getBrokerAddress(), port=getBrokerPort()):\n        self.channels = {}\n        self.broker_address = broker_address\n        self.port = port\n    def create_channel(self, name):\n        if name not in self.channels:\n            channel = Channel(name, self.broker_address, self.port)\n            self.channels[name] = channel\n            return channel",
+        "detail": "channel.channelManager",
+        "documentation": {}
+    },
+    {
+        "label": "ChatWindow",
+        "kind": 6,
+        "importPath": "gui_folder.chat_window",
+        "description": "gui_folder.chat_window",
+        "peekOfCode": "class ChatWindow(tk.Tk):\n    def __init__(self, pseudo, salon, user, manager):\n        super().__init__()\n        self.title(f\"Salon : {salon}\")\n        self.geometry(\"500x400\")\n        self.resizable(True, True)\n        self.pseudo = pseudo\n        self.salon = salon\n        self.user = user\n        self.manager = manager",
+        "detail": "gui_folder.chat_window",
+        "documentation": {}
+    },
+    {
+        "label": "LoginWindow",
+        "kind": 6,
+        "importPath": "gui_folder.login_window",
+        "description": "gui_folder.login_window",
+        "peekOfCode": "class LoginWindow(tk.Tk):\n    def __init__(self):\n        super().__init__()\n        self.title(\"Connexion au Chat\")\n        self.geometry(\"300x200\")\n        self.resizable(False, False)\n        self.pseudo = tk.StringVar()\n        self.salon = tk.StringVar(value=\"general\")\n        self.create_widgets()\n    def create_widgets(self):",
+        "detail": "gui_folder.login_window",
+        "documentation": {}
+    },
+    {
+        "label": "User",
+        "kind": 6,
+        "importPath": "user.user",
+        "description": "user.user",
+        "peekOfCode": "class User:\n    def __init__(self, pseudo, broker_address=getBrokerAddress(), port=getBrokerPort()):\n        self.id = createUserId()\n        self.pseudo = pseudo  # reçu depuis l'interface GUI\n        self.client = mqtt.Client(client_id=self.id)\n        self.client.connect(broker_address, port)\n        self.client.loop_start()\n    def send_message(self, message, channel_name):\n        full_message = f\"{self.pseudo} : {message}\"\n        self.client.publish(channel_name, full_message)",
+        "detail": "user.user",
+        "documentation": {}
+    },
+    {
+        "label": "createUserId",
+        "kind": 2,
+        "importPath": "user.user",
+        "description": "user.user",
+        "peekOfCode": "def createUserId():\n    randomstring = ''.join(random.choice(string.ascii_letters) for _ in range(15))\n    timestamp = datetime.datetime.now().isoformat()\n    to_hash = f\"{timestamp}{randomstring}\".encode('utf-8')\n    return hashlib.sha1(to_hash).hexdigest()\ndef createUserPseudo():\n    return input(\"Veuillez renseigner votre pseudo : \")\nclass User:\n    def __init__(self, pseudo, broker_address=getBrokerAddress(), port=getBrokerPort()):\n        self.id = createUserId()",
+        "detail": "user.user",
+        "documentation": {}
+    },
+    {
+        "label": "createUserPseudo",
+        "kind": 2,
+        "importPath": "user.user",
+        "description": "user.user",
+        "peekOfCode": "def createUserPseudo():\n    return input(\"Veuillez renseigner votre pseudo : \")\nclass User:\n    def __init__(self, pseudo, broker_address=getBrokerAddress(), port=getBrokerPort()):\n        self.id = createUserId()\n        self.pseudo = pseudo  # reçu depuis l'interface GUI\n        self.client = mqtt.Client(client_id=self.id)\n        self.client.connect(broker_address, port)\n        self.client.loop_start()\n    def send_message(self, message, channel_name):",
+        "detail": "user.user",
+        "documentation": {}
+    },
+    {
+        "label": "getBrokerAddress",
+        "kind": 2,
+        "importPath": "utils.utils",
+        "description": "utils.utils",
+        "peekOfCode": "def getBrokerAddress():\n    return \"broker.hivemq.com\"\ndef getBrokerPort():\n    return 1883",
+        "detail": "utils.utils",
+        "documentation": {}
+    },
+    {
+        "label": "getBrokerPort",
+        "kind": 2,
+        "importPath": "utils.utils",
+        "description": "utils.utils",
+        "peekOfCode": "def getBrokerPort():\n    return 1883",
+        "detail": "utils.utils",
+        "documentation": {}
+    }
+]
