@@ -8,7 +8,7 @@ import io
 
 
 class ChatWindow(tk.Tk):
-    def __init__(self, pseudo, salon, user, manager): # test de commit
+    def __init__(self, pseudo, salon, user, manager): 
         super().__init__()
         self.title(f"Salon : {salon}")
         self.geometry("500x400")
@@ -62,6 +62,12 @@ class ChatWindow(tk.Tk):
         tk.Button(bottom_frame, text="Envoyer", command=self.send_message).pack(side="right", padx=(10, 0))
 
         tk.Button(bottom_frame, text="Image", command=self.send_image).pack(side="right", padx=(0, 5))
+        
+        salon_create_frame = tk.Frame(self)
+        salon_create_frame.pack(fill="x", padx=10, pady=(0, 10))
+
+        self.new_channel_var = tk.StringVar()
+        tk.Button(salon_create_frame, text="Créer salon", command=self.show_create_channel_popup).pack(side="left", padx=(5, 0))
 
 
     def display_message(self, author, text):
@@ -194,3 +200,43 @@ class ChatWindow(tk.Tk):
         self.chat_area.insert("end", "\n")
         self.chat_area.config(state="disabled")
         self.chat_area.see("end")
+        
+    def create_channel(self, new_channel):
+        new_channel = new_channel.strip()
+        if not new_channel:
+            self.display_message("Système", "Nom de salon invalide.")
+            return
+
+        existing_channels = list(self.salon_menu["values"])
+        if new_channel in existing_channels:
+            self.display_message("Système", f"Le salon '{new_channel}' existe déjà.")
+            return
+
+        updated_channels = existing_channels + [new_channel]
+        self.salon_menu["values"] = updated_channels
+        self.salon_var.set(new_channel)
+        self.on_change_salon(None)
+        self.display_message("Système", f"Salon '{new_channel}' créé.")
+
+       
+    def show_create_channel_popup(self):
+        popup = tk.Toplevel(self)
+        popup.title("Nouveau salon")
+        popup.geometry("300x100")
+        popup.grab_set()  # Rendre la fenêtre modale
+
+        tk.Label(popup, text="Nom du salon :").pack(pady=(10, 5))
+        entry_var = tk.StringVar()
+        entry = tk.Entry(popup, textvariable=entry_var)
+        entry.pack(pady=(0, 5))
+        entry.focus()
+
+        def validate():
+            name = entry_var.get().strip()
+            if name:
+                self.create_channel(name)
+                popup.destroy()
+            else:
+                tk.messagebox.showerror("Erreur", "Le nom du salon ne peut pas être vide.")
+
+        tk.Button(popup, text="Créer", command=validate).pack()
