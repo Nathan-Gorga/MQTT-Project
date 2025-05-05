@@ -8,6 +8,7 @@ import io
 
 
 class ChatWindow(tk.Tk):
+
     def __init__(self, pseudo, salon, user, manager): 
         super().__init__()
         self.title(f"Salon : {salon}")
@@ -18,6 +19,18 @@ class ChatWindow(tk.Tk):
         self.salon = salon
         self.user = user
         self.manager = manager
+
+        
+        # Mon identifiant DM
+        self.my_id = self.user.user_id
+
+        # Écoute des invitations : sur mon canal perso
+        self.manager.get_channel(self.my_id).set_on_message_callback(self.receive_dm_invitation)
+
+        # (Optionnel) écoute de l'annuaire pour afficher la liste d’utilisateurs
+        self.known_users = set()
+        self.manager.get_channel("annuaire").set_on_message_callback(self.receive_annuaire_entry)
+
 
         self.salon_widgets = {}  # ✅ Initialisé ici pour éviter l'erreur
 
@@ -41,6 +54,10 @@ class ChatWindow(tk.Tk):
 
 
     def create_widgets(self):
+        
+        
+        
+
         # === Layout général : Sidebar + Chat ===
         main_frame = tk.Frame(self)
         main_frame.pack(fill="both", expand=True)
@@ -108,6 +125,11 @@ class ChatWindow(tk.Tk):
 
         self.new_channel_var = tk.StringVar()
         tk.Button(salon_create_frame, text="Créer salon", command=self.show_create_channel_popup).pack(side="left", padx=(5, 0))
+        
+        # Bouton DM
+        salon_create_frame = tk.Frame(self)
+        salon_create_frame.pack(fill="x", padx=10, pady=(0, 10))
+        tk.Button(salon_create_frame, text="DM", command=self.show_dm_popup).pack(side="left", padx=(5, 0))
 
 
 
@@ -143,6 +165,54 @@ class ChatWindow(tk.Tk):
         if channel_name in self.salon_widgets:
             preview = contenu[:10] + "..." if len(contenu) > 10 else contenu
             self.salon_widgets[channel_name]["last_msg"].config(text=preview)
+    
+    
+    def receive_dm_invitation(self, channel_name, msg):
+        """Invitation reçue : 'msg' est le nom du canal DM secret."""
+        self.display_message("Système", f"Invitation DM reçue pour canal '{msg}'")
+        # Crée et rejoint le canal DM
+        self.manager.create_channel(msg)
+        dm = self.manager.get_channel(msg)
+        dm.set_on_message_callback(self.receive_message)
+        dm.subscribe()
+        # Ajout à la liste et sélection
+        self.salons_disponibles.append(msg)
+        self.select_channel(msg)
+
+    def receive_annuaire_entry(self, channel_name, msg):
+        """Nouvel identifiant publié sur 'annuaire'."""
+        if msg not in self.known_users:
+            self.known_users.add(msg)
+            print(f"[Annuaire] nouvel utilisateur : {msg}")
+
+    def show_dm_popup(self):
+        popup = tk.Toplevel(self)
+        popup.title("Nouvelle DM")
+        popup.geometry("300x100")
+        popup.grab_set()
+        tk.Label(popup, text="ID destinataire :").pack(pady=(10,5))
+        entry = tk.Entry(popup)
+        entry.pack(pady=(0,5)); entry.focus()
+        def send_invite():
+            target = entry.get().strip()
+            if not target:
+                tk.messagebox.showerror("Erreur", "ID invalide")
+                return
+            # Génère canal DM aléatoire
+            import random, string
+            chan = "dm_" + ''.join(random.choices(string.ascii_letters+string.digits, k=6))
+            # Crée, souscrit, sélectionne
+            self.manager.create_channel(chan)
+            dm = self.manager.get_channel(chan)
+            dm.set_on_message_callback(self.receive_message)
+            dm.subscribe()
+            self.salons_disponibles.append(chan)
+            self.select_channel(chan)
+            # Envoie invitation sur le canal perso de target
+            self.user.send_raw(chan, target)
+            self.display_message("Système", f"Invitation DM envoyée à {target}")
+            popup.destroy()
+        tk.Button(popup, text="Envoyer", command=send_invite).pack()
 
 
 
