@@ -18,6 +18,9 @@ class ChatWindow(tk.Tk):
         self.pseudo_var = tk.StringVar(value=pseudo)
         self.salon_var = tk.StringVar(value=salon)
         self.create_widgets()
+        
+        self.local_storage = {}  # Stocke tous les messages de chaque salon
+
 
         # Brancher la réception des messages
         channel = self.manager.get_channel(salon)
@@ -99,9 +102,18 @@ class ChatWindow(tk.Tk):
     def receive_message(self, channel_name, msg):
         if msg:
             auteur, _, contenu = msg.partition(": ")
-            self.display_message(auteur.strip(), contenu.strip())
+            message = f"{auteur.strip()} : {contenu.strip()}"
 
-            # ✅ Met à jour la sidebar (dernier message)
+            # ✅ Sauvegarde dans l’historique local
+            if channel_name not in self.local_storage:
+                self.local_storage[channel_name] = []
+            self.local_storage[channel_name].append(message)
+
+            # ✅ Met à jour uniquement si c’est le salon affiché
+            if channel_name == self.salon:
+                self.display_message(auteur.strip(), contenu.strip())
+
+            # ✅ Met à jour aperçu dans la sidebar
             if channel_name in self.salon_widgets:
                 preview = contenu[:10] + "..." if len(contenu) > 10 else contenu
                 self.salon_widgets[channel_name]["last_msg"].config(text=preview)
@@ -159,4 +171,17 @@ class ChatWindow(tk.Tk):
         channel.subscribe()
 
         self.display_message("Système", f"Salon changé pour : {self.salon}")
+
+        # Vider l'affichage du chat
+        self.chat_area.config(state="normal")
+        self.chat_area.delete("1.0", "end")
+
+        # Réafficher l’historique
+        if self.salon in self.local_storage:
+            for msg in self.local_storage[self.salon]:
+                self.chat_area.insert("end", msg + "\n")
+
+        self.chat_area.config(state="disabled")
+        self.chat_area.see("end")
+
 
