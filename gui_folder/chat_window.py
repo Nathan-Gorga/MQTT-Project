@@ -23,47 +23,37 @@ class ChatWindow(tk.Tk):
             channel.set_on_message_callback(self.receive_message)
 
     def create_widgets(self):
-        # Zone d'affichage (lecture seule)
-        self.chat_area = tk.Text(self, state="disabled", wrap="word", bg="#f9f9f9")
-        self.chat_area.pack(padx=10, pady=(10, 0), expand=True, fill="both")
+        # === Zone top : Pseudo + changement ===
+        top_frame = tk.Frame(self)
+        top_frame.pack(fill="x", padx=10, pady=(10, 5))
 
-        # Scroll automatique
-        self.chat_area_scrollbar = tk.Scrollbar(self.chat_area)
-        self.chat_area.config(yscrollcommand=self.chat_area_scrollbar.set)
-        self.chat_area_scrollbar.config(command=self.chat_area.yview)
+        tk.Label(top_frame, text="Pseudo :").pack(side="left")
+        self.pseudo_var = tk.StringVar(value=self.pseudo)
+        tk.Entry(top_frame, textvariable=self.pseudo_var, width=20).pack(side="left", padx=(5, 10))
+        tk.Button(top_frame, text="Changer", command=self.change_pseudo).pack(side="left")
 
-        # Ligne de séparation
-        separator = tk.Frame(self, height=2, bd=1, relief="sunken")
-        separator.pack(fill="x", padx=5, pady=5)
+        # === Menu déroulant des salons ===
+        self.salon_menu = ttk.Combobox(self, textvariable=self.salon_var,
+                                        values=["general", "tech", "random"],
+                                        state="readonly")
+        self.salon_menu.pack(fill="x", padx=10, pady=(0, 10))
+        self.salon_menu.bind("<<ComboboxSelected>>", self.on_change_salon)
 
-        # Conteneur bas : champ + bouton
+        # === Zone d'affichage des messages ===
+        self.chat_area = tk.Text(self, state="disabled", wrap="word", bg="#f9f9f9", height=15)
+        self.chat_area.pack(fill="both", expand=True, padx=10)
+
+        # === Zone d’écriture + bouton envoyer ===
         bottom_frame = tk.Frame(self)
-        bottom_frame.pack(fill="x", padx=10, pady=(0, 10))
+        bottom_frame.pack(fill="x", padx=10, pady=(5, 10))
 
         self.message = tk.StringVar()
         self.entry = tk.Entry(bottom_frame, textvariable=self.message)
         self.entry.pack(side="left", fill="x", expand=True)
         self.entry.bind("<Return>", lambda e: self.send_message())
 
-        send_button = tk.Button(bottom_frame, text="Envoyer", command=self.send_message)
-        send_button.pack(side="right", padx=(10, 0))
+        tk.Button(bottom_frame, text="Envoyer", command=self.send_message).pack(side="right", padx=(10, 0))
 
-        # Menu déroulant pour changer de salon
-        salons = ["general", "tech", "random"]
-        self.salon_menu = ttk.Combobox(self, textvariable=self.salon_var, values=salons, state="readonly")
-        self.salon_menu.pack(pady=(0, 5))
-        self.salon_menu.bind("<<ComboboxSelected>>", self.on_change_salon)
-
-        # Bloc de changement de pseudo
-        pseudo_frame = tk.Frame(self)
-        pseudo_frame.pack(fill="x", padx=10, pady=(10, 5))
-
-        tk.Label(pseudo_frame, text="Pseudo :").pack(side="left")
-        self.pseudo_var = tk.StringVar(value=self.pseudo)
-        pseudo_entry = tk.Entry(pseudo_frame, textvariable=self.pseudo_var, width=20)
-        pseudo_entry.pack(side="left", padx=(5, 10))
-
-        tk.Button(pseudo_frame, text="Changer", command=self.change_pseudo).pack(side="left")
 
 
 
