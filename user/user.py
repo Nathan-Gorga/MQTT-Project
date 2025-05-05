@@ -27,3 +27,12 @@ class User:
         self.client.publish(channel_name, full_message)
         print(f"[envoyé sur {channel_name}] {full_message}")
 
+    def subscribe_to_channels(self, channels, callback):
+        def on_message(client, userdata, message):
+            channel = message.topic
+            content = message.payload.decode("utf-8")
+            callback(channel, content)
+
+        self.client.on_message = on_message
+        for ch in channels:
+            self.client.subscribe(ch)

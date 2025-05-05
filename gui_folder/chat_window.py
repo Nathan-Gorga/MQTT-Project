@@ -17,15 +17,20 @@ class ChatWindow(tk.Tk):
 
         self.pseudo_var = tk.StringVar(value=pseudo)
         self.salon_var = tk.StringVar(value=salon)
-        self.create_widgets()
+        
         
         self.local_storage = {}  # Stocke tous les messages de chaque salon
 
 
-        # Brancher la réception des messages
-        channel = self.manager.get_channel(salon)
-        if channel:
-            channel.set_on_message_callback(self.receive_message)
+        self.salons_disponibles = ["general", "tech", "random"]
+        self.local_storage = {}
+
+        # s'abonne une fois via l'objet user
+        self.user.subscribe_to_channels(self.salons_disponibles, self.receive_message)
+
+        self.create_widgets()
+
+
 
 
     def create_widgets(self):
@@ -164,12 +169,6 @@ class ChatWindow(tk.Tk):
         self.salon = nouveau_salon
         self.salon_var_label.config(text=f"Salon actuel : {self.salon}")
 
-        # Créer ou récupérer et rebind le callback
-        self.manager.create_channel(nouveau_salon)
-        channel = self.manager.get_channel(nouveau_salon)
-        channel.set_on_message_callback(self.receive_message)
-        channel.subscribe()
-
         self.display_message("Système", f"Salon changé pour : {self.salon}")
 
         # Vider l'affichage du chat
@@ -183,5 +182,4 @@ class ChatWindow(tk.Tk):
 
         self.chat_area.config(state="disabled")
         self.chat_area.see("end")
-
 
