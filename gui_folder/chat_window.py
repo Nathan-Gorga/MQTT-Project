@@ -16,6 +16,7 @@ class ChatWindow(tk.Tk):
         self.pseudo_var = tk.StringVar(value=pseudo)
         self.salon_var = tk.StringVar(value=salon)
         self.create_widgets()
+        self.local_storage = {}
 
         # Brancher la réception des messages
         channel = self.manager.get_channel(salon)
@@ -66,7 +67,9 @@ class ChatWindow(tk.Tk):
     def receive_message(self, channel_name, msg):
         if msg:
             auteur, _, contenu = msg.partition(": ")
-            self.display_message(auteur.strip(), contenu.strip())
+            self.store_local_message(channel_name, auteur.strip(), contenu.strip())
+            if self.salon == channel_name:
+                self.display_message(auteur.strip(), contenu.strip())
 
     def send_message(self):
         msg = self.message.get().strip()
@@ -84,15 +87,24 @@ class ChatWindow(tk.Tk):
         if ancien_channel:
             ancien_channel.unsubscribe()
 
-        # Création et abonnement nouveau salon
+        # Mise à jour salon courant
         self.salon = nouveau_salon
+        self.title(f"Salon : {self.salon}")
+
+        # Abonnement au nouveau
         self.manager.create_channel(nouveau_salon)
         new_channel = self.manager.get_channel(nouveau_salon)
         new_channel.set_on_message_callback(self.receive_message)
         new_channel.subscribe()
 
-        self.title(f"Salon : {self.salon}")
+        # Nettoyer la zone et afficher l’historique
+        self.chat_area.config(state="normal")
+        self.chat_area.delete("1.0", tk.END)
+        self.chat_area.config(state="disabled")
+
         self.display_message("Système", f"Salon changé pour : {self.salon}")
+        self.display_local_history(self.salon)
+
 
     def change_pseudo(self):
         new_pseudo = self.pseudo_var.get().strip()
@@ -100,3 +112,15 @@ class ChatWindow(tk.Tk):
             self.pseudo = new_pseudo
             self.user.pseudo = new_pseudo
             self.display_message("Système", f"Pseudo changé pour : {self.pseudo}")
+            
+    def store_local_message(self, channel, author, content):
+        if channel not in self.local_storage:
+            self.local_storage[channel] = []
+        self.local_storage[channel].append((author, content))
+        
+    def display_local_history(self, salon):
+        messages = self.local_storage.get(salon, [])
+        for author, content in messages:
+            self.display_message(author, content)
+   
+
