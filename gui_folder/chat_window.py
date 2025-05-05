@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 
 class ChatWindow(tk.Tk):
-    def __init__(self, pseudo, salon, user, manager):
+    def __init__(self, pseudo, salon, user, manager): # test de commit
         super().__init__()
         self.title(f"Salon : {salon}")
         self.geometry("500x400")
