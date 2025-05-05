@@ -188,7 +188,7 @@
         "kind": 6,
         "importPath": "gui_folder.chat_window",
         "description": "gui_folder.chat_window",
-        "peekOfCode": "class ChatWindow(tk.Tk):\n    def __init__(self, pseudo, salon, user, manager):\n        super().__init__()\n        self.title(f\"Salon : {salon}\")\n        self.geometry(\"500x400\")\n        self.resizable(True, True)\n        self.pseudo = pseudo\n        self.salon = salon\n        self.user = user\n        self.manager = manager",
+        "peekOfCode": "class ChatWindow(tk.Tk):\n    def __init__(self, pseudo, salon, user, manager): # test de commit\n        super().__init__()\n        self.title(f\"Salon : {salon}\")\n        self.geometry(\"500x400\")\n        self.resizable(True, True)\n        self.pseudo = pseudo\n        self.salon = salon\n        self.user = user\n        self.manager = manager",
         "detail": "gui_folder.chat_window",
         "documentation": {}
     },
