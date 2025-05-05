@@ -19,7 +19,9 @@ class ChannelManager:
         return list(self.channels.keys())
 
     def get_channel(self, name):
+        print(name)
         return self.channels.get(name)
+        
 
     def subscribe_all(self, on_message_callback):
         for channel in self.channels.values():

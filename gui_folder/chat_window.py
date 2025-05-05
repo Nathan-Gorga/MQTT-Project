@@ -1,8 +1,14 @@
 import tkinter as tk
 from tkinter import ttk
+import base64
+import json
+from tkinter import filedialog
+from PIL import Image, ImageTk
+import io
+
 
 class ChatWindow(tk.Tk):
-    def __init__(self, pseudo, salon, user, manager):
+    def __init__(self, pseudo, salon, user, manager): 
         super().__init__()
         self.title(f"Salon : {salon}")
         self.geometry("500x400")
@@ -29,6 +35,7 @@ class ChatWindow(tk.Tk):
         self.user.subscribe_to_channels(self.salons_disponibles, self.receive_message)
 
         self.create_widgets()
+        self.local_storage = {}
 
 
 
@@ -94,7 +101,13 @@ class ChatWindow(tk.Tk):
 
         tk.Button(bottom_frame, text="Envoyer", command=self.send_message).pack(side="right", padx=(10, 0))
 
+        tk.Button(bottom_frame, text="Image", command=self.send_image).pack(side="right", padx=(0, 5))
+        
+        salon_create_frame = tk.Frame(self)
+        salon_create_frame.pack(fill="x", padx=10, pady=(0, 10))
 
+        self.new_channel_var = tk.StringVar()
+        tk.Button(salon_create_frame, text="Créer salon", command=self.show_create_channel_popup).pack(side="left", padx=(5, 0))
 
 
 
@@ -105,23 +118,39 @@ class ChatWindow(tk.Tk):
         self.chat_area.config(state="disabled")
 
     def receive_message(self, channel_name, msg):
-        if msg:
-            auteur, _, contenu = msg.partition(": ")
-            message = f"{auteur.strip()} : {contenu.strip()}"
+      
+    def receive_message(self, channel_name, msg):
+        try:
+            # 👉 Cas image JSON
+            payload = json.loads(msg)
+            if isinstance(payload, dict) and payload.get("type") == "image":
+                author = payload.get("author", "Inconnu")
+                image_data = payload.get("data")
+                self.store_local_message(channel_name, author, payload)
+                if self.salon == channel_name:
+                    self.display_image(author, image_data)
+                return  # stop ici si image traitée
+        except Exception:
+            pass  # Pas un JSON valide : on traite comme texte brut
 
-            # ✅ Sauvegarde dans l’historique local
-            if channel_name not in self.local_storage:
-                self.local_storage[channel_name] = []
-            self.local_storage[channel_name].append(message)
+        # 👉 Cas texte simple
+        auteur, _, contenu = msg.partition(": ")
+        message = f"{auteur.strip()} : {contenu.strip()}"
 
-            # ✅ Met à jour uniquement si c’est le salon affiché
-            if channel_name == self.salon:
-                self.display_message(auteur.strip(), contenu.strip())
+        # Stockage dans la mémoire locale
+        if channel_name not in self.local_storage:
+            self.local_storage[channel_name] = []
+        self.local_storage[channel_name].append(message)
 
-            # ✅ Met à jour aperçu dans la sidebar
-            if channel_name in self.salon_widgets:
-                preview = contenu[:10] + "..." if len(contenu) > 10 else contenu
-                self.salon_widgets[channel_name]["last_msg"].config(text=preview)
+        # Affichage si on est dans le bon salon
+        if channel_name == self.salon:
+            self.display_message(auteur.strip(), contenu.strip())
+
+        # Aperçu dans la sidebar
+        if channel_name in self.salon_widgets:
+            preview = contenu[:10] + "..." if len(contenu) > 10 else contenu
+            self.salon_widgets[channel_name]["last_msg"].config(text=preview)
+
 
 
     def send_message(self):
@@ -140,15 +169,24 @@ class ChatWindow(tk.Tk):
         if ancien_channel:
             ancien_channel.unsubscribe()
 
-        # Création et abonnement nouveau salon
+        # Mise à jour salon courant
         self.salon = nouveau_salon
+        self.title(f"Salon : {self.salon}")
+
+        # Abonnement au nouveau
         self.manager.create_channel(nouveau_salon)
         new_channel = self.manager.get_channel(nouveau_salon)
         new_channel.set_on_message_callback(self.receive_message)
         new_channel.subscribe()
 
-        self.title(f"Salon : {self.salon}")
+        # Nettoyer la zone et afficher l’historique
+        self.chat_area.config(state="normal")
+        self.chat_area.delete("1.0", tk.END)
+        self.chat_area.config(state="disabled")
+
         self.display_message("Système", f"Salon changé pour : {self.salon}")
+        self.display_local_history(self.salon)
+
 
     def change_pseudo(self):
         new_pseudo = self.pseudo_var.get().strip()
@@ -171,15 +209,113 @@ class ChatWindow(tk.Tk):
 
         self.display_message("Système", f"Salon changé pour : {self.salon}")
 
-        # Vider l'affichage du chat
+        # Vider et réafficher l'historique du nouveau salon
         self.chat_area.config(state="normal")
         self.chat_area.delete("1.0", "end")
+        self.chat_area.config(state="disabled")
+        self.display_local_history(self.salon)
 
-        # Réafficher l’historique
-        if self.salon in self.local_storage:
-            for msg in self.local_storage[self.salon]:
-                self.chat_area.insert("end", msg + "\n")
+            
+    def store_local_message(self, channel, author, content):
+        if channel not in self.local_storage:
+            self.local_storage[channel] = []
+        self.local_storage[channel].append((author, content))
+        
+    def display_local_history(self, salon):
+        messages = self.local_storage.get(salon, [])
+        for author, content in messages:
+            if isinstance(content, dict) and content.get("type") == "image":
+                self.display_image(author, content.get("data"))
+            else:
+                self.display_message(author, content)
 
+   
+
+    def send_image(self):
+        filepath = filedialog.askopenfilename(
+            title="Choisir une image",
+            filetypes=[("Images", "*.png *.jpg *.jpeg *.gif")]
+        )
+        if not filepath:
+            return
+
+        # Lecture + encodage
+        with open(filepath, "rb") as f:
+            image_bytes = f.read()
+        image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+
+        # Construction du JSON
+        payload = {
+            "type": "image",
+            "author": self.pseudo,
+            "data": image_b64
+        }
+        json_payload = json.dumps(payload)
+
+        # Publication **sans** préfixe
+        # on utilise directement le client MQTT, sans passer par user.send_message
+        self.user.client.publish(self.salon, json_payload)
+        print(f"[envoyé image sur {self.salon}] {json_payload[:50]}…")
+        
+    def display_image(self, author, base64_data):
+        import io
+        from PIL import Image, ImageTk
+        import base64
+
+        image_data = base64.b64decode(base64_data)
+        image = Image.open(io.BytesIO(image_data))
+        image.thumbnail((200, 200))  # Tu peux ajuster la taille ici
+
+        image_tk = ImageTk.PhotoImage(image)
+
+        # Important : garder une référence sinon l'image disparaît
+        if not hasattr(self, "images_refs"):
+            self.images_refs = []
+        self.images_refs.append(image_tk)
+
+        self.chat_area.config(state="normal")
+        self.chat_area.insert("end", f"{author} a envoyé une image :\n")
+        self.chat_area.image_create("end", image=image_tk)
+        self.chat_area.insert("end", "\n")
         self.chat_area.config(state="disabled")
         self.chat_area.see("end")
+        
+    def create_channel(self, new_channel):
+        new_channel = new_channel.strip()
+        if not new_channel:
+            self.display_message("Système", "Nom de salon invalide.")
+            return
 
+        existing_channels = list(self.salon_menu["values"])
+        if new_channel in existing_channels:
+            self.display_message("Système", f"Le salon '{new_channel}' existe déjà.")
+            return
+
+        updated_channels = existing_channels + [new_channel]
+        self.salon_menu["values"] = updated_channels
+        self.salon_var.set(new_channel)
+        self.on_change_salon(None)
+        self.display_message("Système", f"Salon '{new_channel}' créé.")
+
+       
+    def show_create_channel_popup(self):
+        popup = tk.Toplevel(self)
+        popup.title("Nouveau salon")
+        popup.geometry("300x100")
+        popup.grab_set()  # Rendre la fenêtre modale
+
+        tk.Label(popup, text="Nom du salon :").pack(pady=(10, 5))
+        entry_var = tk.StringVar()
+        entry = tk.Entry(popup, textvariable=entry_var)
+        entry.pack(pady=(0, 5))
+        entry.focus()
+
+        def validate():
+            name = entry_var.get().strip()
+            if name:
+                self.create_channel(name)
+                popup.destroy()
+            else:
+                tk.messagebox.showerror("Erreur", "Le nom du salon ne peut pas être vide.")
+
+        tk.Button(popup, text="Créer", command=validate).pack()
