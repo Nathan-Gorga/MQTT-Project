@@ -257,7 +257,7 @@
         "kind": 6,
         "importPath": "user.user",
         "description": "user.user",
-        "peekOfCode": "class User:\n    def __init__(self, pseudo, broker_address=getBrokerAddress(), port=getBrokerPort()):\n        self.id = createUserId()\n        self.pseudo = pseudo  # reçu depuis l'interface GUI\n        self.client = mqtt.Client(client_id=self.id)\n        self.client.connect(broker_address, port)\n        self.client.loop_start()\n    def send_message(self, message, channel_name):\n        full_message = f\"{self.pseudo} : {message}\"\n        self.client.publish(channel_name, full_message)",
+        "peekOfCode": "class User:\n    def __init__(self, pseudo, broker_address=getBrokerAddress(), port=getBrokerPort()):\n        self.id = createUserId()\n        self.pseudo = pseudo  # reçu depuis l'interface GUI\n        # Identifiant DM : pseudo + 5 caractères aléatoires\n        suffix = ''.join(random.choices(string.ascii_letters+string.digits, k=5))\n        self.user_id = f\"{pseudo}{suffix}\"\n        self.client = mqtt.Client(client_id=self.id)\n        self.client.connect(broker_address, port)\n        self.client.loop_start()",
         "detail": "user.user",
         "documentation": {}
     },
@@ -275,7 +275,7 @@
         "kind": 2,
         "importPath": "user.user",
         "description": "user.user",
-        "peekOfCode": "def createUserPseudo():\n    return input(\"Veuillez renseigner votre pseudo : \")\nclass User:\n    def __init__(self, pseudo, broker_address=getBrokerAddress(), port=getBrokerPort()):\n        self.id = createUserId()\n        self.pseudo = pseudo  # reçu depuis l'interface GUI\n        self.client = mqtt.Client(client_id=self.id)\n        self.client.connect(broker_address, port)\n        self.client.loop_start()\n    def send_message(self, message, channel_name):",
+        "peekOfCode": "def createUserPseudo():\n    return input(\"Veuillez renseigner votre pseudo : \")\nclass User:\n    def __init__(self, pseudo, broker_address=getBrokerAddress(), port=getBrokerPort()):\n        self.id = createUserId()\n        self.pseudo = pseudo  # reçu depuis l'interface GUI\n        # Identifiant DM : pseudo + 5 caractères aléatoires\n        suffix = ''.join(random.choices(string.ascii_letters+string.digits, k=5))\n        self.user_id = f\"{pseudo}{suffix}\"\n        self.client = mqtt.Client(client_id=self.id)",
         "detail": "user.user",
         "documentation": {}
     },
