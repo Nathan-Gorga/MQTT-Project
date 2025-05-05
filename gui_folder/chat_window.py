@@ -131,14 +131,9 @@ class ChatWindow(tk.Tk):
         except Exception:
             pass  # Pas un JSON valide : on traite comme texte brut
 
-        # 👉 Cas texte simple
         auteur, _, contenu = msg.partition(": ")
-        message = f"{auteur.strip()} : {contenu.strip()}"
+        self.store_local_message(channel_name, auteur.strip(), contenu.strip())
 
-        # Stockage dans la mémoire locale
-        if channel_name not in self.local_storage:
-            self.local_storage[channel_name] = []
-        self.local_storage[channel_name].append(message)
 
         # Affichage si on est dans le bon salon
         if channel_name == self.salon:
