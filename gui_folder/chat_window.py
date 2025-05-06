@@ -15,6 +15,8 @@ class ChatWindow(tk.Tk):
         self.geometry("500x400")
         self.resizable(True, True)
 
+        self.selected_salon_widget = None  # Pour savoir quel bloc est actif visuellement
+
         self.pseudo = pseudo
         self.salon = salon
         self.user = user
@@ -73,6 +75,12 @@ class ChatWindow(tk.Tk):
 
     def create_widgets(self):
         
+        self.configure(bg="#f5f5f5")
+        label_font = ("Segoe UI", 10)
+        header_font = ("Segoe UI", 11, "bold")
+        entry_style = {"font": ("Segoe UI", 10), "relief": "flat", "highlightthickness": 1, "highlightbackground": "#ccc", "highlightcolor": "#999"}
+        button_style = {"font": ("Segoe UI", 10, "bold"), "bg": "#007acc", "fg": "white", "relief": "flat", "activebackground": "#005f99"}
+
         
         
 
@@ -81,18 +89,20 @@ class ChatWindow(tk.Tk):
         main_frame.pack(fill="both", expand=True)
 
         # === Sidebar gauche stylée ===
-        sidebar = tk.Frame(main_frame, width=200, bg="#f0f0f0", bd=1, relief="solid")
-        sidebar.pack(side="left", fill="y")
+        sidebar = tk.Frame(main_frame, width=200, bg="#eeeeee", bd=0)
+        sidebar.pack(side="left", fill="y")     
 
-        tk.Label(sidebar, text="Salons", bg="#f0f0f0", font=("Arial", 11, "bold")).pack(pady=(10, 5))
+        tk.Label(sidebar, text="Salons", bg="#eeeeee", font=("Segoe UI", 11, "bold"), fg="#333").pack(pady=(10, 5))
 
         self.salons_disponibles = ["general", "tech", "random"]
         for salon in self.salons_disponibles:
-            bloc = tk.Frame(sidebar, bg="#ffffff", bd=1, relief="groove", padx=5, pady=5)
-            bloc.pack(fill="x", pady=2, padx=5)
+            bloc = tk.Frame(sidebar, bg="#ffffff", bd=0, relief="flat", padx=10, pady=6, highlightbackground="#ccc", highlightthickness=1)
+            bloc.pack(fill="x", pady=5, padx=10)
 
-            salon_label = tk.Label(bloc, text=salon, font=("Arial", 10, "bold"), anchor="w", bg="#ffffff")
+
+            salon_label = tk.Label(bloc, text=salon, font=("Segoe UI", 10, "bold"), anchor="w", bg="#ffffff", fg="#222")
             salon_label.pack(fill="x")
+
 
             last_msg = tk.Label(bloc, text="", font=("Arial", 8), fg="gray", anchor="w", bg="#ffffff")
             last_msg.pack(fill="x")
@@ -115,14 +125,16 @@ class ChatWindow(tk.Tk):
         tk.Label(top_frame, text="Pseudo :").pack(side="left")
         self.pseudo_var = tk.StringVar(value=self.pseudo)
         tk.Entry(top_frame, textvariable=self.pseudo_var, width=20).pack(side="left", padx=(5, 10))
-        tk.Button(top_frame, text="Changer", command=self.change_pseudo).pack(side="left")
+        tk.Button(top_frame, text="Changer", command=self.change_pseudo, **button_style).pack(side="left", padx=(5, 0), ipadx=5, ipady=2)
+
 
         # Salon actif affiché
         self.salon_var_label = tk.Label(chat_frame, text=f"Salon actuel : {self.salon}", fg="gray")
         self.salon_var_label.pack(anchor="w", padx=10)
+        
 
         # Zone messages
-        self.chat_area = tk.Text(chat_frame, state="disabled", wrap="word", bg="#f9f9f9", height=15)
+        self.chat_area = tk.Text(chat_frame, state="disabled", wrap="word", bg="#ffffff", height=15, font=("Segoe UI", 10), relief="flat")
         self.chat_area.pack(fill="both", expand=True, padx=10)
 
         # Entrée + bouton envoyer
@@ -130,32 +142,39 @@ class ChatWindow(tk.Tk):
         bottom_frame.pack(fill="x", padx=10, pady=(5, 10))
 
         self.message = tk.StringVar()
-        self.entry = tk.Entry(bottom_frame, textvariable=self.message)
+        self.entry = tk.Entry(bottom_frame, textvariable=self.message, **entry_style)
+
         self.entry.pack(side="left", fill="x", expand=True)
         self.entry.bind("<Return>", lambda e: self.send_message())
 
-        tk.Button(bottom_frame, text="Envoyer", command=self.send_message).pack(side="right", padx=(10, 0))
+        tk.Button(bottom_frame, text="Envoyer", command=self.send_message, **button_style).pack(side="right", padx=(10, 0), ipadx=5, ipady=2)
+        tk.Button(bottom_frame, text="Image", command=self.send_image, **button_style).pack(side="right", padx=(0, 5), ipadx=5, ipady=2)
 
-        tk.Button(bottom_frame, text="Image", command=self.send_image).pack(side="right", padx=(0, 5))
         
         salon_create_frame = tk.Frame(self)
         salon_create_frame.pack(fill="x", padx=10, pady=(0, 10))
 
         self.new_channel_var = tk.StringVar()
-        tk.Button(salon_create_frame, text="Créer salon", command=self.show_create_channel_popup).pack(side="left", padx=(5, 0))
-        
-        # Bouton DM
-        # salon_create_frame = tk.Frame(self)
-        # salon_create_frame.pack(fill="x", padx=10, pady=(0, 10))
-        # tk.Button(salon_create_frame, text="DM", command=self.show_dm_popup).pack(side="left", padx=(5, 0))
+        tk.Button(salon_create_frame, text="Créer salon", command=self.show_create_channel_popup, **button_style).pack(side="left", padx=(5, 0), ipadx=5, ipady=2)
+
 
 
 
     def display_message(self, sender, message):
         self.chat_area.config(state='normal')
-        self.chat_area.insert('end', f"{sender}: {message}\n")
+
+        # Affiche le pseudo en gras
+        self.chat_area.insert("end", f"{sender}\n", "sender")
+
+        # Affiche le message dans une bulle grise
+        self.chat_area.insert("end", f"{message}\n\n", "bubble")
+
+        self.chat_area.tag_configure("bubble", background="#e0e0e0", lmargin1=10, lmargin2=10, rmargin=10,
+                                    font=("Segoe UI", 10), spacing1=2, spacing3=8, relief="flat", borderwidth=2)
+
         self.chat_area.config(state='disabled')
         self.chat_area.see('end')
+
       
     def receive_message(self, channel_name, msg):
         try:
@@ -291,6 +310,7 @@ class ChatWindow(tk.Tk):
                 "last_msg": last_msg
             }
         tk.Button(popup, text="Envoyer", command=send_invite).pack()
+        # tk.Button(top_frame, text="Changer", command=self.change_pseudo, **button_style).pack(side="left", padx=(5, 0), ipadx=5, ipady=2)
         
 
 
@@ -341,6 +361,19 @@ class ChatWindow(tk.Tk):
         if nouveau_salon == self.salon:
             return
 
+        # Réinitialiser la couleur du précédent (si présent)
+        if self.selected_salon_widget:
+            self.selected_salon_widget["frame"].config(bg="#ffffff")
+            self.selected_salon_widget["label"].config(bg="#ffffff")
+            self.selected_salon_widget["last_msg"].config(bg="#ffffff")
+
+        # Appliquer le style sélectionné
+        current_widget = self.salon_widgets[nouveau_salon]
+        current_widget["frame"].config(bg="#d0e8ff")
+        current_widget["label"].config(bg="#d0e8ff")
+        current_widget["last_msg"].config(bg="#d0e8ff")
+        self.selected_salon_widget = current_widget
+
         # Désabonnement de l'ancien salon
         ancien_channel = self.manager.get_channel(self.salon)
         if ancien_channel:
@@ -348,20 +381,20 @@ class ChatWindow(tk.Tk):
 
         self.salon = nouveau_salon
         self.salon_var_label.config(text=f"Salon actuel : {self.salon}")
-
         self.display_message("Système", f"Salon changé pour : {self.salon}")
 
         # Réabonnement MQTT au nouveau salon
         self.manager.create_channel(nouveau_salon)
         new_channel = self.manager.get_channel(nouveau_salon)
         new_channel.set_on_message_callback(self.receive_message)
-       # new_channel.subscribe()
+        #new_channel.subscribe()
 
-        # Vider et réafficher l'historique du nouveau salon
+        # Réafficher historique
         self.chat_area.config(state="normal")
         self.chat_area.delete("1.0", "end")
         self.chat_area.config(state="disabled")
         self.display_local_history(self.salon)
+
 
             
     def store_local_message(self, channel, author, content):
@@ -491,7 +524,9 @@ class ChatWindow(tk.Tk):
             else:
                 tk.messagebox.showerror("Erreur", "Le nom du salon ne peut pas être vide.")
 
-        tk.Button(popup, text="Créer", command=validate).pack()
+        # tk.Button(popup, text="Créer", command=validate).pack()
+        button_style = {"font": ("Segoe UI", 10, "bold"), "bg": "#007acc", "fg": "white", "relief": "flat", "activebackground": "#005f99"}
+        tk.Button(popup, text="Créer", command=validate, **button_style).pack(side="left", padx=(5, 0), ipadx=5, ipady=2).pack()
     
     
     def send_dm_invitation(self, recipient_pseudo):
