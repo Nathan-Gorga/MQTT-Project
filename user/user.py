@@ -43,7 +43,13 @@ class User:
             channel = message.topic
             content = message.payload.decode("utf-8")
             callback(channel, content)
+            print("[DEBUG] Réception message:", message)
 
         self.client.on_message = on_message
         for ch in channels:
             self.client.subscribe(ch)
+    @staticmethod
+    def generate_user_id(pseudo):
+        return f"{pseudo}_{len(pseudo)}"
+    
+    

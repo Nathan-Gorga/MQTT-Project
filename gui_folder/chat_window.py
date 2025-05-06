@@ -20,8 +20,10 @@ class ChatWindow(tk.Tk):
         self.user = user
         self.manager = manager
 
-        self.manager.get_channel(self.user.user_id).set_on_message_callback(self.on_personal_message)
-
+        self.manager.create_channel(self.user.user_id)
+        personal_channel = self.manager.get_channel(self.user.user_id)
+        personal_channel.set_on_message_callback(self.on_personal_message)
+        personal_channel.subscribe()
         # Mon identifiant DM
         self.my_id = self.user.user_id
 
@@ -143,9 +145,9 @@ class ChatWindow(tk.Tk):
         tk.Button(salon_create_frame, text="Créer salon", command=self.show_create_channel_popup).pack(side="left", padx=(5, 0))
         
         # Bouton DM
-        salon_create_frame = tk.Frame(self)
-        salon_create_frame.pack(fill="x", padx=10, pady=(0, 10))
-        tk.Button(salon_create_frame, text="DM", command=self.show_dm_popup).pack(side="left", padx=(5, 0))
+        # salon_create_frame = tk.Frame(self)
+        # salon_create_frame.pack(fill="x", padx=10, pady=(0, 10))
+        # tk.Button(salon_create_frame, text="DM", command=self.show_dm_popup).pack(side="left", padx=(5, 0))
 
 
 
@@ -201,6 +203,7 @@ class ChatWindow(tk.Tk):
         self.manager.create_channel(dm_channel_name)
         channel = self.manager.get_channel(dm_channel_name)
         channel.set_on_message_callback(self.receive_message)
+        
         channel.subscribe()
 
         # Ajout dans la liste de salons
@@ -263,7 +266,8 @@ class ChatWindow(tk.Tk):
             self.salons_disponibles.append(chan)
             self.select_channel(chan)
             # Envoie invitation sur le canal perso de target
-            self.user.send_raw(target, chan)
+            self.user.send_raw(target, f"DM_INVITE::{chan}")
+            print(f"connect to DM_INVITE::{chan}")
             self.display_message("Système", f"Invitation DM envoyée à {target}")
             popup.destroy()
             sidebar_frame = list(self.children.values())[0].winfo_children()[0]  # récupère la frame de gauche
@@ -351,7 +355,7 @@ class ChatWindow(tk.Tk):
         self.manager.create_channel(nouveau_salon)
         new_channel = self.manager.get_channel(nouveau_salon)
         new_channel.set_on_message_callback(self.receive_message)
-        new_channel.subscribe()
+       # new_channel.subscribe()
 
         # Vider et réafficher l'historique du nouveau salon
         self.chat_area.config(state="normal")
@@ -488,3 +492,22 @@ class ChatWindow(tk.Tk):
                 tk.messagebox.showerror("Erreur", "Le nom du salon ne peut pas être vide.")
 
         tk.Button(popup, text="Créer", command=validate).pack()
+    
+    
+    def send_dm_invitation(self, recipient_pseudo):
+        salon_name = f"dm_{self.pseudo}_{recipient_pseudo}"
+
+        # Crée le salon en local
+        self.manager.create_channel(salon_name)
+        self.manager.get_channel(salon_name).subscribe()
+
+        # Récupère l'user_id complet du destinataire
+        from user.user import User  # en haut du fichier s'il manque
+
+        target_id = User.generate_user_id(recipient_pseudo)
+        self.user.send_raw(f"DM_INVITE::{salon_name}", target_id)
+
+        # Ouvre direct le salon chez l’émetteur
+        ChatWindow(self.pseudo, salon_name, self.user, self.manager).mainloop()
+        
+

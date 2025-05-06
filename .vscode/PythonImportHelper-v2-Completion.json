@@ -253,6 +253,69 @@
         "documentation": {}
     },
     {
+        "label": "make_dm_channel_name",
+        "kind": 2,
+        "importPath": "protocols.dm_protocol",
+        "description": "protocols.dm_protocol",
+        "peekOfCode": "def make_dm_channel_name(user1_id, user2_id):\n    \"\"\"Retourne un nom canonique pour un canal DM entre deux utilisateurs\"\"\"\n    sorted_users = sorted([user1_id, user2_id])\n    return f\"dm_{sorted_users[0]}_{sorted_users[1]}\"\ndef is_dm_invitation(message):\n    \"\"\"Vérifie si le message est une invitation DM valide\"\"\"\n    return message.startswith(\"DM_INVITE::\")\ndef extract_dm_channel_name(message):\n    \"\"\"Extrait le nom du salon DM depuis une invitation\"\"\"\n    if not is_dm_invitation(message):",
+        "detail": "protocols.dm_protocol",
+        "documentation": {}
+    },
+    {
+        "label": "is_dm_invitation",
+        "kind": 2,
+        "importPath": "protocols.dm_protocol",
+        "description": "protocols.dm_protocol",
+        "peekOfCode": "def is_dm_invitation(message):\n    \"\"\"Vérifie si le message est une invitation DM valide\"\"\"\n    return message.startswith(\"DM_INVITE::\")\ndef extract_dm_channel_name(message):\n    \"\"\"Extrait le nom du salon DM depuis une invitation\"\"\"\n    if not is_dm_invitation(message):\n        return None\n    parts = message.split(\"::\", 1)\n    if len(parts) != 2:\n        return None",
+        "detail": "protocols.dm_protocol",
+        "documentation": {}
+    },
+    {
+        "label": "extract_dm_channel_name",
+        "kind": 2,
+        "importPath": "protocols.dm_protocol",
+        "description": "protocols.dm_protocol",
+        "peekOfCode": "def extract_dm_channel_name(message):\n    \"\"\"Extrait le nom du salon DM depuis une invitation\"\"\"\n    if not is_dm_invitation(message):\n        return None\n    parts = message.split(\"::\", 1)\n    if len(parts) != 2:\n        return None\n    return parts[1] if parts[1].startswith(\"dm_\") else None\ndef build_dm_invitation(channel_name):\n    \"\"\"Construit un message d'invitation DM\"\"\"",
+        "detail": "protocols.dm_protocol",
+        "documentation": {}
+    },
+    {
+        "label": "build_dm_invitation",
+        "kind": 2,
+        "importPath": "protocols.dm_protocol",
+        "description": "protocols.dm_protocol",
+        "peekOfCode": "def build_dm_invitation(channel_name):\n    \"\"\"Construit un message d'invitation DM\"\"\"\n    return f\"DM_INVITE::{channel_name}\"\ndef should_ignore_dm(user_id, target_id):\n    \"\"\"Évite les auto-invitations\"\"\"\n    return not target_id or user_id == target_id\n# dm_protocol.py\ndef setup_personal_dm_channel(manager: ChannelManager, user: User, on_message_callback: Callable):\n    \"\"\"Crée le channel personnel et configure la réception d'invitations DM.\"\"\"\n    my_id = user.user_id",
+        "detail": "protocols.dm_protocol",
+        "documentation": {}
+    },
+    {
+        "label": "should_ignore_dm",
+        "kind": 2,
+        "importPath": "protocols.dm_protocol",
+        "description": "protocols.dm_protocol",
+        "peekOfCode": "def should_ignore_dm(user_id, target_id):\n    \"\"\"Évite les auto-invitations\"\"\"\n    return not target_id or user_id == target_id\n# dm_protocol.py\ndef setup_personal_dm_channel(manager: ChannelManager, user: User, on_message_callback: Callable):\n    \"\"\"Crée le channel personnel et configure la réception d'invitations DM.\"\"\"\n    my_id = user.user_id\n    manager.create_channel(my_id)\n    personal_channel = manager.get_channel(my_id)\n    personal_channel.set_on_message_callback(on_message_callback)",
+        "detail": "protocols.dm_protocol",
+        "documentation": {}
+    },
+    {
+        "label": "setup_personal_dm_channel",
+        "kind": 2,
+        "importPath": "protocols.dm_protocol",
+        "description": "protocols.dm_protocol",
+        "peekOfCode": "def setup_personal_dm_channel(manager: ChannelManager, user: User, on_message_callback: Callable):\n    \"\"\"Crée le channel personnel et configure la réception d'invitations DM.\"\"\"\n    my_id = user.user_id\n    manager.create_channel(my_id)\n    personal_channel = manager.get_channel(my_id)\n    personal_channel.set_on_message_callback(on_message_callback)\n    personal_channel.subscribe()\ndef handle_dm_invitation(message: str, on_accept: Callable[[str], None]):\n    \"\"\"Traite un message d'invitation DM et appelle on_accept avec le nom du salon si accepté.\"\"\"\n    if not is_dm_invitation(message):",
+        "detail": "protocols.dm_protocol",
+        "documentation": {}
+    },
+    {
+        "label": "handle_dm_invitation",
+        "kind": 2,
+        "importPath": "protocols.dm_protocol",
+        "description": "protocols.dm_protocol",
+        "peekOfCode": "def handle_dm_invitation(message: str, on_accept: Callable[[str], None]):\n    \"\"\"Traite un message d'invitation DM et appelle on_accept avec le nom du salon si accepté.\"\"\"\n    if not is_dm_invitation(message):\n        return\n    salon = extract_dm_channel_name(message)\n    if not salon:\n        return\n    from tkinter import messagebox\n    if messagebox.askyesno(\"Invitation\", f\"Rejoindre le salon privé '{salon}' ?\"):\n        on_accept(salon)",
+        "detail": "protocols.dm_protocol",
+        "documentation": {}
+    },
+    {
         "label": "User",
         "kind": 6,
         "importPath": "user.user",

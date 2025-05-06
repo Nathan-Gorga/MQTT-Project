@@ -43,9 +43,11 @@ class LoginWindow(tk.Tk):
         self.manager.subscribe_all(None)
 
         # 2) créer & s'abonner à son canal personnel
-        my_id = self.user.user_id
+        my_id = User.generate_user_id(pseudo)
         self.manager.create_channel(my_id)
-        self.manager.get_channel(my_id).subscribe()
+        personal_channel = self.manager.get_channel(my_id)
+        personal_channel.set_on_message_callback(self.receive_dm_invitation)
+        personal_channel.subscribe()
 
         # 3) s'abonner + publier sur "annuaire"
         self.manager.create_channel("annuaire")
@@ -54,3 +56,26 @@ class LoginWindow(tk.Tk):
 
         self.destroy()
         ChatWindow(pseudo, salon, self.user, self.manager).mainloop()
+       
+    def receive_dm_invitation(self, message):
+        # Exemple message: "DM_INVITE::chat_pierre_alex"
+        if message.startswith("DM_INVITE::"):
+            parts = message.split("::", 1)
+            if len(parts) == 2 and parts[1].startswith("dm_") and len(parts[1]) > 6:
+                salon = parts[1]
+                if messagebox.askyesno("Invitation", f"Rejoindre le salon privé '{salon}' ?"):
+                    self.manager.create_channel(salon)
+                    self.manager.get_channel(salon).subscribe()
+                    self.destroy()
+                    ChatWindow(self.pseudo.get(), salon, self.user, self.manager).mainloop()
+            else:
+                print("[ERREUR] Format d'invitation DM invalide :", message)
+
+            print(f"[INFO] Invitation reçue pour rejoindre le salon : {salon}")
+
+            # Optionnel : boite de dialogue
+            if messagebox.askyesno("Invitation", f"Rejoindre le salon privé '{salon}' ?"):
+                self.manager.create_channel(salon)
+                self.manager.get_channel(salon).subscribe()
+                self.destroy()  # fermer fenêtre login
+                ChatWindow(self.pseudo.get(), salon, self.user, self.manager).mainloop()
