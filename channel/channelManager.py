@@ -25,7 +25,8 @@ class ChannelManager:
 
     def subscribe_all(self, on_message_callback):
         for channel in self.channels.values():
-            channel.set_on_message_callback(on_message_callback)
+            if channel.on_message_callback is None:
+                channel.set_on_message_callback(on_message_callback)
             channel.subscribe()
 
     def stop_all(self):

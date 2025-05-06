@@ -45,7 +45,6 @@ class LoginWindow(tk.Tk):
         # 2) créer & s'abonner à son canal personnel
         my_id = self.user.user_id
         self.manager.create_channel(my_id)
-        self.manager.get_channel(my_id).set_on_message_callback(None)  # callback branché dans ChatWindow
         self.manager.get_channel(my_id).subscribe()
 
         # 3) s'abonner + publier sur "annuaire"

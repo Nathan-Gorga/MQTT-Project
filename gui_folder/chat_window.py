@@ -20,7 +20,8 @@ class ChatWindow(tk.Tk):
         self.user = user
         self.manager = manager
 
-        
+        self.manager.get_channel(self.user.user_id).set_on_message_callback(self.on_personal_message)
+
         # Mon identifiant DM
         self.my_id = self.user.user_id
 
@@ -48,10 +49,25 @@ class ChatWindow(tk.Tk):
         self.user.subscribe_to_channels(self.salons_disponibles, self.receive_message)
 
         self.create_widgets()
-        
 
 
+    def on_message_received(self, topic, message):
+        print(f"[MQTT] Message reçu sur {topic}: {message}")
 
+        # Affichage direct si c’est le canal actif
+        if topic == self.current_channel:
+            self.display_message(message)
+        else:
+            self.notify_new_message(topic)
+            
+    def on_personal_message(self, topic, msg):
+        try:
+            if msg.startswith("dm_"):  # Une invitation à un DM
+                self.receive_dm_invitation(topic, msg)
+            else:
+                self.on_message_received(topic, msg)
+        except Exception as e:
+            print("Erreur dans le callback perso :", e)
 
     def create_widgets(self):
         
@@ -133,11 +149,11 @@ class ChatWindow(tk.Tk):
 
 
 
-    def display_message(self, author, text):
-        self.chat_area.config(state="normal")
-        self.chat_area.insert("end", f"{author} : {text}\n")
-        self.chat_area.see("end")
-        self.chat_area.config(state="disabled")
+    def display_message(self, sender, message):
+        self.chat_area.config(state='normal')
+        self.chat_area.insert('end', f"{sender}: {message}\n")
+        self.chat_area.config(state='disabled')
+        self.chat_area.see('end')
       
     def receive_message(self, channel_name, msg):
         try:
@@ -167,6 +183,8 @@ class ChatWindow(tk.Tk):
             self.salon_widgets[channel_name]["last_msg"].config(text=preview)
     
     
+    
+    
     def receive_dm_invitation(self, channel_name, msg):
         
         self.display_message("Système", f"Invitation DM reçue pour canal '{msg}'")
@@ -176,7 +194,7 @@ class ChatWindow(tk.Tk):
         dm.set_on_message_callback(self.receive_message)
         dm.subscribe()
         
-        dm = channel_name.strip()
+        dm = msg.strip()
         if not dm:
             self.display_message("Système", "Nom de DM invalide.")
             return
@@ -248,7 +266,7 @@ class ChatWindow(tk.Tk):
             self.salons_disponibles.append(chan)
             self.select_channel(chan)
             # Envoie invitation sur le canal perso de target
-            self.user.send_raw(chan, target)
+            self.user.send_raw(target, chan)
             self.display_message("Système", f"Invitation DM envoyée à {target}")
             popup.destroy()
             sidebar_frame = list(self.children.values())[0].winfo_children()[0]  # récupère la frame de gauche
