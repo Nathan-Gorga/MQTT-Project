@@ -34,7 +34,7 @@ class ChatWindow(tk.Tk):
 
         self.salon_widgets = {}  # ✅ Initialisé ici pour éviter l'erreur
 
-        self.pseudo_var = tk.StringVar(value=pseudo)
+
         self.salon_var = tk.StringVar(value=salon)
         
         
@@ -42,13 +42,13 @@ class ChatWindow(tk.Tk):
 
 
         self.salons_disponibles = ["general", "tech", "random"]
-        self.local_storage = {}
+        
 
         # s'abonne une fois via l'objet user
         self.user.subscribe_to_channels(self.salons_disponibles, self.receive_message)
 
         self.create_widgets()
-        self.local_storage = {}
+        
 
 
 
@@ -168,16 +168,55 @@ class ChatWindow(tk.Tk):
     
     
     def receive_dm_invitation(self, channel_name, msg):
-        """Invitation reçue : 'msg' est le nom du canal DM secret."""
+        
         self.display_message("Système", f"Invitation DM reçue pour canal '{msg}'")
-        # Crée et rejoint le canal DM
+        
         self.manager.create_channel(msg)
         dm = self.manager.get_channel(msg)
         dm.set_on_message_callback(self.receive_message)
         dm.subscribe()
-        # Ajout à la liste et sélection
-        self.salons_disponibles.append(msg)
-        self.select_channel(msg)
+        
+        dm = channel_name.strip()
+        if not dm:
+            self.display_message("Système", "Nom de DM invalide.")
+            return
+
+        if dm in self.salons_disponibles:
+            self.display_message("Système", f"Le salon '{dm}' existe déjà.")
+            return
+
+        # Ajouter au modèle
+        self.salons_disponibles.append(dm)
+        self.select_channel(dm)
+        # Abonnement MQTT
+        self.user.subscribe_to_channels([dm], self.receive_message)
+
+        # Création UI bloc dans la sidebar
+        sidebar_frame = list(self.children.values())[0].winfo_children()[0]  # récupère la frame de gauche
+
+        bloc = tk.Frame(sidebar_frame, bg="#ffffff", bd=1, relief="groove", padx=5, pady=5)
+        bloc.pack(fill="x", pady=2, padx=5)
+
+        salon_label = tk.Label(bloc, text=dm, font=("Arial", 10, "bold"), anchor="w", bg="#ffffff")
+        salon_label.pack(fill="x")
+
+        last_msg = tk.Label(bloc, text="", font=("Arial", 8), fg="gray", anchor="w", bg="#ffffff")
+        last_msg.pack(fill="x")
+
+        bloc.bind("<Button-1>", lambda e, s=dm: self.select_channel(s))
+        salon_label.bind("<Button-1>", lambda e, s=dm: self.select_channel(s))
+        last_msg.bind("<Button-1>", lambda e, s=dm: self.select_channel(s))
+
+        self.salon_widgets[dm] = {
+            "frame": bloc,
+            "label": salon_label,
+            "last_msg": last_msg
+        }
+
+        self.display_message("Système", f"Salon '{dm}' créé.")
+        self.select_channel(dm)
+        
+        # ―――――――――――――――――――――――――――――――――――――――→
 
     def receive_annuaire_entry(self, channel_name, msg):
         """Nouvel identifiant publié sur 'annuaire'."""
@@ -212,7 +251,28 @@ class ChatWindow(tk.Tk):
             self.user.send_raw(chan, target)
             self.display_message("Système", f"Invitation DM envoyée à {target}")
             popup.destroy()
+            sidebar_frame = list(self.children.values())[0].winfo_children()[0]  # récupère la frame de gauche
+
+            bloc = tk.Frame(sidebar_frame, bg="#ffffff", bd=1, relief="groove", padx=5, pady=5)
+            bloc.pack(fill="x", pady=2, padx=5)
+
+            salon_label = tk.Label(bloc, text=target, font=("Arial", 10, "bold"), anchor="w", bg="#ffffff")
+            salon_label.pack(fill="x")
+
+            last_msg = tk.Label(bloc, text="", font=("Arial", 8), fg="gray", anchor="w", bg="#ffffff")
+            last_msg.pack(fill="x")
+
+            bloc.bind("<Button-1>", lambda e, s=chan: self.select_channel(s))
+            salon_label.bind("<Button-1>", lambda e, s=chan: self.select_channel(s))
+            last_msg.bind("<Button-1>", lambda e, s=chan: self.select_channel(s))
+
+            self.salon_widgets[chan] = {
+                "frame": bloc,
+                "label": salon_label,
+                "last_msg": last_msg
+            }
         tk.Button(popup, text="Envoyer", command=send_invite).pack()
+        
 
 
 
@@ -271,6 +331,12 @@ class ChatWindow(tk.Tk):
         self.salon_var_label.config(text=f"Salon actuel : {self.salon}")
 
         self.display_message("Système", f"Salon changé pour : {self.salon}")
+
+        # Réabonnement MQTT au nouveau salon
+        self.manager.create_channel(nouveau_salon)
+        new_channel = self.manager.get_channel(nouveau_salon)
+        new_channel.set_on_message_callback(self.receive_message)
+        new_channel.subscribe()
 
         # Vider et réafficher l'historique du nouveau salon
         self.chat_area.config(state="normal")
