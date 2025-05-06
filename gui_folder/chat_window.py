@@ -186,55 +186,52 @@ class ChatWindow(tk.Tk):
     
     
     def receive_dm_invitation(self, channel_name, msg):
-        
-        self.display_message("Système", f"Invitation DM reçue pour canal '{msg}'")
-        
-        self.manager.create_channel(msg)
-        dm = self.manager.get_channel(msg)
-        dm.set_on_message_callback(self.receive_message)
-        dm.subscribe()
-        
-        dm = msg.strip()
-        if not dm:
-            self.display_message("Système", "Nom de DM invalide.")
+        """Reçoit une invitation DM sur mon canal personnel."""
+        dm_channel_name = msg.strip()
+
+        if not dm_channel_name:
+            self.display_message("Système", "Invitation DM invalide (nom de canal vide).")
             return
 
-        if dm in self.salons_disponibles:
-            self.display_message("Système", f"Le salon '{dm}' existe déjà.")
+        if dm_channel_name in self.salons_disponibles:
+            self.display_message("Système", f"Le salon '{dm_channel_name}' est déjà présent.")
             return
 
-        # Ajouter au modèle
-        self.salons_disponibles.append(dm)
-        self.select_channel(dm)
-        # Abonnement MQTT
-        self.user.subscribe_to_channels([dm], self.receive_message)
+        # Abonnement au nouveau canal
+        self.manager.create_channel(dm_channel_name)
+        channel = self.manager.get_channel(dm_channel_name)
+        channel.set_on_message_callback(self.receive_message)
+        channel.subscribe()
 
-        # Création UI bloc dans la sidebar
-        sidebar_frame = list(self.children.values())[0].winfo_children()[0]  # récupère la frame de gauche
+        # Ajout dans la liste de salons
+        self.salons_disponibles.append(dm_channel_name)
+
+        # Création de l'interface dans la sidebar
+        sidebar_frame = list(self.children.values())[0].winfo_children()[0]  # frame de gauche
 
         bloc = tk.Frame(sidebar_frame, bg="#ffffff", bd=1, relief="groove", padx=5, pady=5)
         bloc.pack(fill="x", pady=2, padx=5)
 
-        salon_label = tk.Label(bloc, text=dm, font=("Arial", 10, "bold"), anchor="w", bg="#ffffff")
+        salon_label = tk.Label(bloc, text=dm_channel_name, font=("Arial", 10, "bold"), anchor="w", bg="#ffffff")
         salon_label.pack(fill="x")
 
         last_msg = tk.Label(bloc, text="", font=("Arial", 8), fg="gray", anchor="w", bg="#ffffff")
         last_msg.pack(fill="x")
 
-        bloc.bind("<Button-1>", lambda e, s=dm: self.select_channel(s))
-        salon_label.bind("<Button-1>", lambda e, s=dm: self.select_channel(s))
-        last_msg.bind("<Button-1>", lambda e, s=dm: self.select_channel(s))
+        bloc.bind("<Button-1>", lambda e, s=dm_channel_name: self.select_channel(s))
+        salon_label.bind("<Button-1>", lambda e, s=dm_channel_name: self.select_channel(s))
+        last_msg.bind("<Button-1>", lambda e, s=dm_channel_name: self.select_channel(s))
 
-        self.salon_widgets[dm] = {
+        self.salon_widgets[dm_channel_name] = {
             "frame": bloc,
             "label": salon_label,
             "last_msg": last_msg
         }
 
-        self.display_message("Système", f"Salon '{dm}' créé.")
-        self.select_channel(dm)
-        
-        # ―――――――――――――――――――――――――――――――――――――――→
+        self.display_message("Système", f"Invitation DM reçue. Connecté au salon '{dm_channel_name}'.")
+
+        # Optionnel : basculer automatiquement vers le DM
+        self.select_channel(dm_channel_name)
 
     def receive_annuaire_entry(self, channel_name, msg):
         """Nouvel identifiant publié sur 'annuaire'."""
